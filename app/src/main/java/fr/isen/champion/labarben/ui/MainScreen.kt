@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import fr.isen.champion.labarben.navigation.BottomNavigationBar
 import fr.isen.champion.labarben.navigation.NavigationBarItem
+import fr.isen.champion.labarben.ui.maps.ZooMapScreen
 import fr.isen.champion.labarben.ui.user.ProfileScreen
 
 @Composable
@@ -34,6 +35,9 @@ fun MainScreen(rootNavController: NavHostController) {
                 }
                 composable(NavigationBarItem.Profile.route) {
                     ProfileScreen(rootNavController)
+                }
+                composable(NavigationBarItem.Map.route) {
+                    ZooMapScreen(rootNavController)
                 }
             }
         }

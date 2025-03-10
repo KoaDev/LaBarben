@@ -2,6 +2,8 @@ package fr.isen.champion.labarben.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,7 +18,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         NavigationBarItem.Home,
-        NavigationBarItem.Profile
+        NavigationBarItem.Profile,
+        NavigationBarItem.Map
     )
 
     NavigationBar {
@@ -27,6 +30,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             val icon = when (item) {
                 NavigationBarItem.Home -> Icons.Default.Home
                 NavigationBarItem.Profile -> Icons.Default.Person
+                NavigationBarItem.Map -> Icons.Default.LocationOn
             }
             val labelText = stringResource(id = item.labelResId)
 

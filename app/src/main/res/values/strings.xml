@@ -25,4 +25,5 @@
     <string name="profileScreen_label_lastname">Lastname :</string>
     <string name="profileScreen_label_no_user">You are not authenticated</string>
     <string name="profileScreen_label_disconnect">Disconnect</string>
+    <string name="navigation_bar_label_map">Map</string>
 </resources>

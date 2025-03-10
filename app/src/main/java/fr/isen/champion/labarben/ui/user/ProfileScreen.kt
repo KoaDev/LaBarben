@@ -131,13 +131,7 @@ fun ProfileScreen(navController: NavController) {
                             launchSingleTop = true
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.profileScreen_label_disconnect))
                 }
