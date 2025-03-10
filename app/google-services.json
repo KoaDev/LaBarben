@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "124640963332",
+    "project_id": "labarben-ab135",
+    "storage_bucket": "labarben-ab135.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124640963332:android:4a08791a604d71aa017e51",
+        "android_client_info": {
+          "package_name": "fr.isen.champion.labarben"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVf3DXi1gdV8bEcO0WpVpbQK2GNEhujFg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
