@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">La Barben</string>
+    <string name="navigation_bar_label_home">Home</string>
+    <string name="navigation_bar_label_event">Events</string>
+    <string name="navigation_bar_label_history">History</string>
+    <string name="navigation_bar_label_agenda">Agenda</string>
+    <string name="navigation_bar_label_profile">Profil</string>
+    <string name="loginScreen_label_title">Welcome Back</string>
+    <string name="loginScreen_label_email">Email</string>
+    <string name="loginScreen_label_password">Password</string>
+    <string name="loginScreen_notification_error">User or password inccorect</string>
+    <string name="loginScreen_label_submit">Login</string>
+    <string name="loginScreen_label_no_account">You don\'t have account ? Go register !</string>
+    <string name="registerScreen_label_title">Create an account</string>
+    <string name="registerScreen_label_email">Email</string>
+    <string name="registerScreen_label_password">Password</string>
+    <string name="registerScreen_notification_error">user or password inccorect</string>
+    <string name="registerScreen_label_submit">Register</string>
+    <string name="registerScreen_label_have_account">Already have account, connect here</string>
 </resources>
