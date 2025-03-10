@@ -1,11 +1,17 @@
 package fr.isen.champion.labarben.ui.user
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
@@ -61,33 +67,62 @@ fun ProfileScreen(navController: NavController) {
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.profileScreen_label_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
+                // Titre de l'écran
+                Text(
+                    text = stringResource(R.string.profileScreen_label_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                // Carte pour les informations de l'utilisateur
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    if (user != null) {
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_email) + user.email,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_firstname) + firstName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_lastname) + lastName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_no_user),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (user != null) {
+                            // Email
+                            ProfileInfoItem(
+                                icon = Icons.Default.Email,
+                                label = stringResource(R.string.profileScreen_label_email),
+                                value = user.email ?: "Non défini"
+                            )
+
+                            // Prénom
+                            ProfileInfoItem(
+                                icon = Icons.Default.Person,
+                                label = stringResource(R.string.profileScreen_label_firstname),
+                                value = firstName
+                            )
+
+                            // Nom
+                            ProfileInfoItem(
+                                icon = Icons.Default.Person,
+                                label = stringResource(R.string.profileScreen_label_lastname),
+                                value = lastName
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_no_user),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
+
+                // Bouton de déconnexion
                 Button(
                     onClick = {
                         auth.signOut()
@@ -96,11 +131,45 @@ fun ProfileScreen(navController: NavController) {
                             launchSingleTop = true
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 ) {
                     Text(stringResource(R.string.profileScreen_label_disconnect))
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ProfileInfoItem(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
