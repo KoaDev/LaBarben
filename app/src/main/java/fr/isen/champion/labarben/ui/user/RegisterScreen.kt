@@ -85,9 +85,9 @@ fun RegisterScreen(navController: NavController) {
                                     val userData = mapOf(
                                         "firstName" to firstName,
                                         "lastName" to lastName,
-                                        "email" to email
+                                        "email" to email,
+                                        "role" to "user"
                                     )
-                                    // Enregistrement des infos utilisateur dans "users/{uid}"
                                     database.child("users").child(uid).setValue(userData)
                                 }
                                 navController.navigate(Screen.Home.route) {

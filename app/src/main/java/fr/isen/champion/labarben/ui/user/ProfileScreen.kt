@@ -1,10 +1,12 @@
 package fr.isen.champion.labarben.ui.user
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -54,40 +56,55 @@ fun ProfileScreen(navController: NavController) {
                 CircularProgressIndicator()
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+            Column(modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.profileScreen_label_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    if (user != null) {
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_email) + user.email,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_firstname) + firstName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_lastname) + lastName,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.profileScreen_label_no_user),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                Text(
+                    text = stringResource(R.string.profileScreen_label_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    border = BorderStroke(1.dp, Color.LightGray),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (user != null) {
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_email) + user.email,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_firstname) + firstName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_lastname) + lastName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_no_user),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Button(
                     onClick = {
                         auth.signOut()

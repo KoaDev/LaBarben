@@ -25,4 +25,21 @@
     <string name="profileScreen_label_lastname">Lastname :</string>
     <string name="profileScreen_label_no_user">You are not authenticated</string>
     <string name="profileScreen_label_disconnect">Disconnect</string>
+    <string name="navigation_bar_label_enclosure">Enclosures</string>
+    <string name="enclosurelistscreen_label_title">Enclosures list</string>
+    <string name="enclosurelistscreen_label_number">"Enclosure number : "</string>
+    <string name="enclosurelistscreen_label_no_available">Not available</string>
+    <string name="enclosuredetailscreen_label_display_enclosure">Display enclosure: </string>
+    <string name="enclosuredetailscreen_label_fetched_rating">Fetched rating: </string>
+    <string name="enclosuredetailscreen_label_title">Enclosure details: </string>
+    <string name="enclosuredetailscreen_label_no_animal_found">No animals found in this enclosure</string>
+    <string name="enclosuredetailscreen_label_rating">Rating</string>
+    <string name="enclosuredetailscreen_label_star">Star </string>
+    <string name="enclosuredetailscreen_label_rating_modified">Rating modified: </string>
+    <string name="enclosuredetailscreen_label_back_clicked">Back button clicked</string>
+    <string name="enclosuredetailscreen_label_back">Back</string>
+    <string name="enclosuredetailscreen_label_fetch_error">Error while fetching zoo data</string>
+    <string name="enclosuredetailscreen_label_not_logged_in">Cannot rate: user not logged in</string>
+    <string name="enclosuredetailscreen_label_rating_updated">Rating successfully updated in Firebase: </string>
+    <string name="enclosuredetailscreen_label_update_error">Error while updating rating in Firebase</string>
 </resources>
