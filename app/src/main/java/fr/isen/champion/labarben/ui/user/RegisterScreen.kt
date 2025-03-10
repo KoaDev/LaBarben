@@ -11,15 +11,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import fr.isen.champion.labarben.R
 import fr.isen.champion.labarben.road.Screen
 
 @Composable
 fun RegisterScreen(navController: NavController) {
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
+    val database = FirebaseDatabase.getInstance().reference
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -38,6 +43,22 @@ fun RegisterScreen(navController: NavController) {
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(32.dp))
+            OutlinedTextField(
+                value = firstName,
+                onValueChange = { firstName = it },
+                label = { Text(stringResource(R.string.registerScreen_label_firstname)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = { Text(stringResource(R.string.registerScreen_label_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -59,11 +80,25 @@ fun RegisterScreen(navController: NavController) {
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
+                                val uid = auth.currentUser?.uid
+                                if (uid != null) {
+                                    val userData = mapOf(
+                                        "firstName" to firstName,
+                                        "lastName" to lastName,
+                                        "email" to email
+                                    )
+                                    // Enregistrement des infos utilisateur dans "users/{uid}"
+                                    database.child("users").child(uid).setValue(userData)
+                                }
                                 navController.navigate(Screen.Home.route) {
                                     popUpTo(Screen.Register.route) { inclusive = true }
                                 }
                             } else {
-                                Toast.makeText(context, R.string.registerScreen_notification_error, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    R.string.registerScreen_notification_error,
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                 },

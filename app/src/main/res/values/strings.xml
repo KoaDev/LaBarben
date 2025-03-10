@@ -4,7 +4,7 @@
     <string name="navigation_bar_label_event">Events</string>
     <string name="navigation_bar_label_history">History</string>
     <string name="navigation_bar_label_agenda">Agenda</string>
-    <string name="navigation_bar_label_profile">Profil</string>
+    <string name="navigation_bar_label_profile">Profile</string>
     <string name="loginScreen_label_title">Welcome Back</string>
     <string name="loginScreen_label_email">Email</string>
     <string name="loginScreen_label_password">Password</string>
@@ -17,4 +17,12 @@
     <string name="registerScreen_notification_error">user or password inccorect</string>
     <string name="registerScreen_label_submit">Register</string>
     <string name="registerScreen_label_have_account">Already have account, connect here</string>
+    <string name="registerScreen_label_name">Name</string>
+    <string name="registerScreen_label_firstname">First name</string>
+    <string name="profileScreen_label_title">Your profile</string>
+    <string name="profileScreen_label_email">"Email : "</string>
+    <string name="profileScreen_label_firstname">"Firstname : "</string>
+    <string name="profileScreen_label_lastname">Lastname :</string>
+    <string name="profileScreen_label_no_user">You are not authenticated</string>
+    <string name="profileScreen_label_disconnect">Disconnect</string>
 </resources>
