@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.champion.labarben.R
 import fr.isen.champion.labarben.data.entity.EnclosureEntity
@@ -28,7 +29,8 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
     var selectedEnclosure by remember { mutableStateOf<EnclosureEntity?>(null) }
     val expandedMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    // Map local pour gérer l'état de maintenance (idEnclos -> isMaintenance)
+    var userRole by remember { mutableStateOf("") }
+
     val maintenanceMap = remember {
         mutableStateMapOf<String, Boolean>().apply {
             zoos.forEach { zoo ->
@@ -36,6 +38,14 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
                     this[enclosure.id] = enclosure.maintenance
                 }
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect
+        val roleRef = FirebaseDatabase.getInstance().getReference("users").child(uid).child("role")
+        roleRef.get().addOnSuccessListener { snapshot ->
+            userRole = snapshot.value?.toString() ?: ""
         }
     }
 
@@ -130,14 +140,16 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
                                                     )
                                                 }
                                             }
-                                            Switch(
-                                                modifier = Modifier.scale(0.8f),
-                                                checked = currentMaintenance,
-                                                onCheckedChange = { newValue ->
-                                                    maintenanceMap[enclosure.id] = newValue
-                                                    updateMaintenanceInFirebase(zoo.id, enclosure.id, newValue)
-                                                }
-                                            )
+                                            if (userRole == "admin") {
+                                                Switch(
+                                                    modifier = Modifier.scale(0.8f),
+                                                    checked = currentMaintenance,
+                                                    onCheckedChange = { newValue ->
+                                                        maintenanceMap[enclosure.id] = newValue
+                                                        updateMaintenanceInFirebase(zoo.id, enclosure.id, newValue)
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -168,4 +180,3 @@ private fun updateMaintenanceInFirebase(zooId: String, enclosureId: String, newV
         }
     }
 }
-

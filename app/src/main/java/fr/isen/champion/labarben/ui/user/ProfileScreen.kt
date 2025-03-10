@@ -22,6 +22,7 @@ fun ProfileScreen(navController: NavController) {
 
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
 
     if (user != null) {
@@ -33,6 +34,7 @@ fun ProfileScreen(navController: NavController) {
                     if (snapshot.exists()) {
                         firstName = snapshot.child("firstName").value?.toString() ?: ""
                         lastName = snapshot.child("lastName").value?.toString() ?: ""
+                        role = snapshot.child("role").value?.toString() ?: ""
                     }
                     isLoading = false
                 }
@@ -56,7 +58,8 @@ fun ProfileScreen(navController: NavController) {
                 CircularProgressIndicator()
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize(),
+            Column(
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
@@ -93,6 +96,11 @@ fun ProfileScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = stringResource(R.string.profileScreen_label_lastname) + lastName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.profileScreen_label_role) + role,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         } else {
