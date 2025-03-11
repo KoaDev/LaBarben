@@ -45,6 +45,7 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation("com.google.android.material:material:1.12.0")
+    implementation("com.kizitonwose.calendar:compose:2.6.2")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

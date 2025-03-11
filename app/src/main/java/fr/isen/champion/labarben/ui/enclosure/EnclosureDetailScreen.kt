@@ -1,10 +1,16 @@
 package fr.isen.champion.labarben.ui.enclosure
 
 import android.annotation.SuppressLint
-import android.util.Log
+import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
@@ -17,15 +23,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.kizitonwose.calendar.compose.HorizontalCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import fr.isen.champion.labarben.R
+import fr.isen.champion.labarben.data.entity.EnclosureDetailsResultEntity
 import fr.isen.champion.labarben.data.entity.EnclosureEntity
 import fr.isen.champion.labarben.data.entity.UserReviewEntity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("DefaultLocale")
 @Composable
 fun EnclosureDetailScreen(
@@ -34,46 +49,42 @@ fun EnclosureDetailScreen(
 ) {
     if (enclosure == null) return
 
-    Log.d("EnclosureDetailScreen", stringResource(R.string.enclosuredetailscreen_label_display_enclosure) + enclosure.id)
+    BackHandler {
+        onBack()
+    }
 
-    var rating by remember { mutableStateOf(0) }
+    var rating by remember { mutableIntStateOf(0) }
     var review by remember { mutableStateOf("") }
-
     var allReviews by remember { mutableStateOf<List<UserReviewEntity>>(emptyList()) }
-    var averageRating by remember { mutableStateOf(0.0) }
-
+    var averageRating by remember { mutableDoubleStateOf(0.0) }
     var isLoading by remember { mutableStateOf(true) }
-
     var userRole by remember { mutableStateOf("") }
+    var feedingDates by remember { mutableStateOf<List<LocalDate>>(emptyList()) }
+
+    val zooId = enclosure.id_biomes
+    val enclosureId = enclosure.id
 
     LaunchedEffect(enclosure.id) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) {
-            // Pas d'utilisateur connecté => on ne fait rien de plus
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
             isLoading = false
             return@LaunchedEffect
         }
 
-        // Lecture du rôle dans "/users/{uid}/role"
-        val roleSnapshot = FirebaseDatabase.getInstance()
-            .getReference("users")
-            .child(uid)
-            .child("role")
-            .get()
-            .await()
-        userRole = roleSnapshot.value?.toString().orEmpty()
+        val userSnapshot = FirebaseDatabase.getInstance()
+            .getReference("users/$uid")
+            .get().await()
 
-        // Lecture note / review de l'utilisateur
-        val fetchedRating = readRatingFromFirebase(enclosure.id_biomes, enclosure.id)
-        if (fetchedRating != null) rating = fetchedRating
+        userRole = userSnapshot.child("role").value?.toString().orEmpty()
 
-        val fetchedReview = readReviewFromFirebase(enclosure.id_biomes, enclosure.id)
-        if (fetchedReview != null) review = fetchedReview
+        val details = fetchEnclosureDetails(zooId, enclosureId)
 
-        // Lecture de tous les avis et notes
-        val (all, avg) = readAllRatingsAndReviews(enclosure.id_biomes, enclosure.id)
-        allReviews = all
-        averageRating = avg
+        allReviews = details.userReviews
+        averageRating = details.averageRating
+        feedingDates = details.feedingDates
+
+        val userReview = details.userReviews.firstOrNull { it.userId == uid }
+        rating = userReview?.rating ?: 0
+        review = userReview?.review.orEmpty()
 
         isLoading = false
     }
@@ -93,127 +104,26 @@ fun EnclosureDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(0.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = stringResource(R.string.enclosuredetailscreen_label_title) + enclosure.id,
-                    style = MaterialTheme.typography.headlineSmall
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(16.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
 
                 if (userRole != "admin") {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        border = BorderStroke(1.dp, Color.LightGray),
-                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                        elevation = CardDefaults.cardElevation(0.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            if (enclosure.animals.isNotEmpty()) {
-                                enclosure.animals.forEach { animal ->
-                                    Text("- ${animal.name}", style = MaterialTheme.typography.bodyMedium)
-                                }
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.enclosuredetailscreen_label_no_animal_found),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.enclosuredetailscreen_label_rating),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row {
-                                for (i in 1..5) {
-                                    val starColor = when {
-                                        rating == 0 -> Color.Gray
-                                        i <= rating -> MaterialTheme.colorScheme.secondary
-                                        else -> Color.Gray
-                                    }
-                                    val icon = if (i <= rating) Icons.Filled.Star else Icons.Outlined.Star
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = stringResource(R.string.enclosuredetailscreen_label_star) + i,
-                                        tint = starColor,
-                                        modifier = Modifier
-                                            .scale(1.2f)
-                                            .clickable {
-                                                rating = i
-                                                updateRatingInFirebase(
-                                                    enclosure.id_biomes,
-                                                    enclosure.id,
-                                                    i
-                                                )
-                                            }
-                                            .padding(end = 4.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(R.string.enclosuredetailscreen_label_review),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedTextField(
-                                value = review,
-                                onValueChange = { review = it },
-                                label = { Text(stringResource(R.string.enclosuredetailscreen_label_review_hint)) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = {
-                                    updateReviewInFirebase(
-                                        enclosure.id_biomes,
-                                        enclosure.id,
-                                        review
-                                    )
-                                }
-                            ) {
-                                Text(stringResource(R.string.enclosuredetailscreen_label_submit_review))
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    UserInterface(enclosure, rating, review, zooId, enclosureId, feedingDates)
                 } else {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        border = BorderStroke(1.dp, Color.LightGray),
-                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-                        elevation = CardDefaults.cardElevation(0.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            if (allReviews.isEmpty()) {
-                                Text(stringResource(R.string.enclosuredetailscreen_label_no_reviews_yet))
-                            } else {
-                                val avgStr = String.format("%.1f", averageRating)
-                                Text(stringResource(R.string.enclosuredetailscreen_label_average_rating) + avgStr)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                allReviews.forEach { item ->
-                                    val starText = if (item.rating > 0) {
-                                        " - ${item.rating} ★"
-                                    } else {
-                                        ""
-                                    }
-                                    Text("${item.firstName} ${item.lastName}$starText")
-                                    if (item.review.isNotEmpty()) {
-                                        Text(
-                                            "\"${item.review}\"",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+                    AdminInterface(
+                        allReviews = allReviews,
+                        averageRating = averageRating,
+                        feedingDates = feedingDates,
+                        zooId = zooId,
+                        enclosureId = enclosureId,
+                        onFeedingDatesUpdated = { updatedList -> feedingDates = updatedList }
+                    )                }
 
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
@@ -227,178 +137,363 @@ fun EnclosureDetailScreen(
     }
 }
 
-private suspend fun readRatingFromFirebase(zooId: String, enclosureId: String): Int? {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
-    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
-    return suspendCancellableCoroutine { continuation ->
-        dbRef.get().addOnSuccessListener { zooSnapshot ->
-            zooSnapshot.children.forEach { zooChild ->
-                val zooChildId = zooChild.child("id").value?.toString()
-                if (zooChildId == zooId) {
-                    val enclosuresSnapshot = zooChild.child("enclosures")
-                    enclosuresSnapshot.children.forEach { enclosureChild ->
-                        val enclosureChildId = enclosureChild.child("id").value?.toString()
-                        if (enclosureChildId == enclosureId) {
-                            val ratingsSnapshot = enclosureChild.child("ratings")
-                            val userRating = ratingsSnapshot.child(uid).value
-                            if (userRating != null) {
-                                val ratingValue = userRating.toString().toIntOrNull()
-                                continuation.resume(ratingValue)
-                                return@addOnSuccessListener
-                            }
-                        }
-                    }
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun UserInterface(
+    enclosure: EnclosureEntity,
+    initialRating: Int,
+    initialReview: String,
+    zooId: String,
+    enclosureId: String,
+    feedingDates: List<LocalDate>,
+) {
+    var localRating by remember { mutableIntStateOf(initialRating) }
+    var localReview by remember { mutableStateOf(initialReview) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(8.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Text(
+                    stringResource(R.string.enclosuredetailscreen_label_animal_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                enclosure.animals.forEach { animal ->
+                    Text("- ${animal.name}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            continuation.resume(null)
-        }.addOnFailureListener {
-            continuation.resume(null)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                FeedingCalendar(
+                    feedingDates = feedingDates,
+                    onDateSelected = {}
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    stringResource(R.string.enclosuredetailscreen_label_rating),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row {
+                    (1..5).forEach { i ->
+                        val starColor =
+                            if (i <= localRating) MaterialTheme.colorScheme.secondary else Color.Gray
+                        val icon = if (i <= localRating) Icons.Filled.Star else Icons.Outlined.Star
+
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = stringResource(R.string.enclosuredetailscreen_label_star) + i,
+                            tint = starColor,
+                            modifier = Modifier
+                                .scale(1.2f)
+                                .clickable {
+                                    localRating = i
+                                }
+                                .padding(end = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.enclosuredetailscreen_label_review),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = localReview,
+                    onValueChange = { newText ->
+                        localReview = newText
+                    },
+                    label = { Text(stringResource(R.string.enclosuredetailscreen_label_review_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        updateUserEnclosureData("ratings", zooId, enclosureId, localRating)
+                        updateUserEnclosureData("reviews", zooId, enclosureId, localReview)
+                    }
+                ) {
+                    Text(text = stringResource(R.string.enclosuredetailscreen_label_submit_review))
+                }
+            }
         }
     }
 }
 
-private suspend fun readReviewFromFirebase(zooId: String, enclosureId: String): String? {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
-    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
-    return suspendCancellableCoroutine { continuation ->
-        dbRef.get().addOnSuccessListener { zooSnapshot ->
-            zooSnapshot.children.forEach { zooChild ->
-                val zooChildId = zooChild.child("id").value?.toString()
-                if (zooChildId == zooId) {
-                    val enclosuresSnapshot = zooChild.child("enclosures")
-                    enclosuresSnapshot.children.forEach { enclosureChild ->
-                        val enclosureChildId = enclosureChild.child("id").value?.toString()
-                        if (enclosureChildId == enclosureId) {
-                            val reviewsSnapshot = enclosureChild.child("reviews")
-                            val userReview = reviewsSnapshot.child(uid).value
-                            if (userReview != null) {
-                                continuation.resume(userReview.toString())
-                                return@addOnSuccessListener
-                            }
+
+
+@SuppressLint("DefaultLocale")
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun AdminInterface(
+    allReviews: List<UserReviewEntity>,
+    averageRating: Double,
+    feedingDates: List<LocalDate>,
+    zooId: String,
+    enclosureId: String,
+    onFeedingDatesUpdated: (List<LocalDate>) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(8.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (allReviews.isEmpty()) {
+                    Text(stringResource(R.string.enclosuredetailscreen_label_no_reviews_yet),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.enclosuredetailscreen_label_average_rating) + String.format(
+                            "%.1f",
+                            averageRating
+                        ),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    allReviews.forEach { item ->
+                        Text("${item.firstName} ${item.lastName} - ${item.rating} ★")
+                        if (item.review.isNotEmpty()) {
+                            Text("\"${item.review}\"", style = MaterialTheme.typography.bodySmall)
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
-            continuation.resume(null)
-        }.addOnFailureListener {
-            continuation.resume(null)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.LightGray),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                FeedingCalendar(
+                    feedingDates = feedingDates,
+                    onDateSelected = { date ->
+                        toggleFeedingDateInFirebase(
+                            zooId,
+                            enclosureId,
+                            date,
+                            feedingDates
+                        ) { updatedList ->
+                            onFeedingDatesUpdated(updatedList)
+                        }
+                    }
+                )
+            }
         }
     }
 }
 
-private suspend fun readAllRatingsAndReviews(zooId: String, enclosureId: String): Pair<List<UserReviewEntity>, Double> {
-    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
-    val result = mutableListOf<UserReviewEntity>()
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun FeedingCalendar(
+    feedingDates: List<LocalDate>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val currentMonth = YearMonth.now()
+    val startMonth = currentMonth.minusYears(5)
+    val endMonth = currentMonth.plusYears(5)
+    val firstDayOfWeek = firstDayOfWeekFromLocale()
+    var isCalendarScrolled by remember { mutableStateOf(false) }
 
-    val zooSnapshot = try {
-        dbRef.get().await()
-    } catch (e: Exception) {
-        return Pair(emptyList(), 0.0)
-    }
+    val state = rememberCalendarState(
+        startMonth = startMonth,
+        endMonth = endMonth,
+        firstVisibleMonth = currentMonth,
+        firstDayOfWeek = firstDayOfWeek
+    )
 
-    var enclosureRef: DatabaseReference? = null
+    val scope = rememberCoroutineScope()
 
-    for (zooChild in zooSnapshot.children) {
-        val zooChildId = zooChild.child("id").value?.toString()
-        if (zooChildId == zooId) {
-            val enclosuresSnapshot = zooChild.child("enclosures")
-            for (encChild in enclosuresSnapshot.children) {
-                val enclosureChildId = encChild.child("id").value?.toString()
-                if (enclosureChildId == enclosureId) {
-                    enclosureRef = encChild.ref
-                    break
+    LaunchedEffect(Unit) {
+        if (!isCalendarScrolled) {
+            val earliest = feedingDates.minOrNull()
+            if (earliest != null) {
+                val target = YearMonth.from(earliest).coerceIn(startMonth, endMonth)
+                scope.launch {
+                    delay(200)
+                    state.scrollToMonth(target)
                 }
             }
-            break
+            isCalendarScrolled = true
         }
     }
-    if (enclosureRef == null) return Pair(emptyList(), 0.0)
 
-    val enclosureData = try {
-        enclosureRef.get().await()
-    } catch (e: Exception) {
-        return Pair(emptyList(), 0.0)
+    HorizontalCalendar(
+        modifier = Modifier.fillMaxWidth(),
+        state = state,
+        monthHeader = { month ->
+            val monthYearText = month.yearMonth.format(
+                DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH)
+            ).replaceFirstChar { it.uppercaseChar() }
+            Text(
+                stringResource(R.string.enclosuredetailscreen_label_calendar_tile) + monthYearText,
+                style = MaterialTheme.typography.titleMedium
+            )
+        },
+        dayContent = { day ->
+            if (day.position == DayPosition.MonthDate) {
+                val dayDate = day.date
+                val isFeedingDay = feedingDates.contains(dayDate)
+                Box(
+                    Modifier
+                        .size(48.dp)
+                        .border(1.dp, Color.LightGray)
+                        .background(if (isFeedingDay) Color.Red else Color.Transparent)
+                        .clickable { onDateSelected(dayDate) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        dayDate.dayOfMonth.toString(),
+                        color = if (isFeedingDay) Color.White else Color.Black
+                    )
+                }
+            } else {
+                Spacer(Modifier.size(40.dp))
+            }
+        }
+    )
+    Spacer(Modifier.height(16.dp))
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun toggleFeedingDateInFirebase(
+    zooId: String,
+    enclosureId: String,
+    date: LocalDate,
+    currentList: List<LocalDate>,
+    onSuccess: (List<LocalDate>) -> Unit
+) {
+    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
+    dbRef.get().addOnSuccessListener { zooSnapshot ->
+        zooSnapshot.children
+            .firstOrNull { it.child("id").value?.toString() == zooId }
+            ?.child("enclosures")
+            ?.children
+            ?.firstOrNull { it.child("id").value?.toString() == enclosureId }
+            ?.ref
+            ?.child("feeding")
+            ?.setValue((if (currentList.contains(date)) currentList - date else currentList + date).map { it.toString() })
+            ?.addOnSuccessListener {
+                onSuccess(if (currentList.contains(date)) currentList - date else currentList + date)
+            }
     }
+}
 
-    val ratingsSnapshot = enclosureData.child("ratings")
-    val reviewsSnapshot = enclosureData.child("reviews")
-
-    val userIds = mutableSetOf<String>()
-    ratingsSnapshot.children.forEach { userIds.add(it.key ?: "") }
-    reviewsSnapshot.children.forEach { userIds.add(it.key ?: "") }
-
+@RequiresApi(Build.VERSION_CODES.O)
+private suspend fun fetchEnclosureDetails(
+    zooId: String,
+    enclosureId: String
+): EnclosureDetailsResultEntity {
+    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
     val userRef = FirebaseDatabase.getInstance().getReference("users")
 
-    for (uid in userIds) {
-        if (uid.isBlank()) continue
-        val ratingValue = ratingsSnapshot.child(uid).value?.toString()?.toIntOrNull() ?: 0
-        val reviewValue = reviewsSnapshot.child(uid).value?.toString().orEmpty()
+    val snapshot = dbRef.get().await()
 
-        val userSnapshot = try {
-            userRef.child(uid).get().await()
-        } catch (e: Exception) {
-            null
-        }
-        val firstName = userSnapshot?.child("firstName")?.value?.toString().orEmpty()
-        val lastName = userSnapshot?.child("lastName")?.value?.toString().orEmpty()
+    val enclosureSnapshot = snapshot.children
+        .firstOrNull { it.child("id").value?.toString() == zooId }
+        ?.child("enclosures")?.children
+        ?.firstOrNull { it.child("id").value?.toString() == enclosureId }
+        ?: return EnclosureDetailsResultEntity(emptyList(), 0.0, emptyList())
 
-        result.add(
-            UserReviewEntity(
-                userId = uid,
-                firstName = firstName,
-                lastName = lastName,
-                rating = ratingValue,
-                review = reviewValue
-            )
-        )
+    val ratingsSnapshot = enclosureSnapshot.child("ratings")
+    val reviewsSnapshot = enclosureSnapshot.child("reviews")
+    val feedingSnapshot = enclosureSnapshot.child("feeding")
+
+    val userIds = (ratingsSnapshot.children.mapNotNull { it.key } +
+            reviewsSnapshot.children.mapNotNull { it.key }).toSet()
+
+    val userReviews = userIds.map { uid ->
+        val rating = ratingsSnapshot.child(uid).getValue(Int::class.java) ?: 0
+        val reviewText = reviewsSnapshot.child(uid).value?.toString().orEmpty()
+
+        val userSnapshot = userRef.child(uid).get().await()
+        val firstName = userSnapshot.child("firstName").value?.toString().orEmpty()
+        val lastName = userSnapshot.child("lastName").value?.toString().orEmpty()
+
+        UserReviewEntity(uid, firstName, lastName, rating, reviewText)
     }
 
-    val validRatings = result.map { it.rating }.filter { it > 0 }
-    val average = if (validRatings.isEmpty()) 0.0 else validRatings.average()
+    val averageRating = userReviews.map { it.rating }.filter { it > 0 }.average().takeIf { it.isFinite() } ?: 0.0
 
-    return Pair(result, average)
-}
-
-private fun updateRatingInFirebase(zooId: String, enclosureId: String, rating: Int) {
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
-    dbRef.get().addOnSuccessListener { zooSnapshot ->
-        zooSnapshot.children.forEach { zooChild ->
-            val zooChildId = zooChild.child("id").value?.toString()
-            if (zooChildId == zooId) {
-                val enclosuresSnapshot = zooChild.child("enclosures")
-                enclosuresSnapshot.children.forEach { enclosureChild ->
-                    val enclosureChildId = enclosureChild.child("id").value?.toString()
-                    if (enclosureChildId == enclosureId) {
-                        enclosureChild.ref
-                            .child("ratings")
-                            .child(uid)
-                            .setValue(rating)
-                    }
-                }
-            }
-        }
+    val feedingDates = feedingSnapshot.children.mapNotNull {
+        runCatching { LocalDate.parse(it.value.toString()) }.getOrNull()
     }
+
+    return EnclosureDetailsResultEntity(
+        userReviews = userReviews,
+        averageRating = averageRating,
+        feedingDates = feedingDates
+    )
 }
 
-private fun updateReviewInFirebase(zooId: String, enclosureId: String, review: String) {
+private inline fun <reified T> updateUserEnclosureData(
+    dataType: String,
+    zooId: String,
+    enclosureId: String,
+    value: T
+) {
     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-    val dbRef = FirebaseDatabase.getInstance().getReference("zoo")
-    dbRef.get().addOnSuccessListener { zooSnapshot ->
-        zooSnapshot.children.forEach { zooChild ->
-            val zooChildId = zooChild.child("id").value?.toString()
-            if (zooChildId == zooId) {
-                val enclosuresSnapshot = zooChild.child("enclosures")
-                enclosuresSnapshot.children.forEach { enclosureChild ->
-                    val enclosureChildId = enclosureChild.child("id").value?.toString()
-                    if (enclosureChildId == enclosureId) {
-                        enclosureChild.ref
-                            .child("reviews")
-                            .child(uid)
-                            .setValue(review)
-                    }
-                }
-            }
-        }
+    FirebaseDatabase.getInstance().getReference("zoo").get().addOnSuccessListener { snapshot ->
+        snapshot.children.firstOrNull { it.child("id").value?.toString() == zooId }
+            ?.child("enclosures")?.children
+            ?.firstOrNull { it.child("id").value?.toString() == enclosureId }
+            ?.ref
+            ?.child(dataType)
+            ?.child(uid)
+            ?.setValue(value)
     }
 }

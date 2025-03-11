@@ -1,5 +1,7 @@
 package fr.isen.champion.labarben.ui.enclosure
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
@@ -8,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.champion.labarben.data.entity.ZooEntity
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FirebaseZooListScreen() {
     var zoos by remember { mutableStateOf<List<ZooEntity>>(emptyList()) }

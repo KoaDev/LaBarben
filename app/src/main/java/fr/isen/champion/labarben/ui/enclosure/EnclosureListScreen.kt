@@ -1,5 +1,7 @@
 package fr.isen.champion.labarben.ui.enclosure
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -24,6 +26,7 @@ import fr.isen.champion.labarben.R
 import fr.isen.champion.labarben.data.entity.EnclosureEntity
 import fr.isen.champion.labarben.data.entity.ZooEntity
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EnclosureListScreen(zoos: List<ZooEntity>) {
     var selectedEnclosure by remember { mutableStateOf<EnclosureEntity?>(null) }

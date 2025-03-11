@@ -1,6 +1,7 @@
 package fr.isen.champion.labarben.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
@@ -18,6 +19,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         NavigationBarItem.Home,
         NavigationBarItem.Enclosure,
+        NavigationBarItem.Service,
         NavigationBarItem.Profile
     )
 
@@ -29,6 +31,7 @@ fun BottomNavigationBar(navController: NavHostController) {
             val icon = when (item) {
                 NavigationBarItem.Home -> Icons.Default.Home
                 NavigationBarItem.Enclosure -> Icons.Default.Place
+                NavigationBarItem.Service -> Icons.Default.Build
                 NavigationBarItem.Profile -> Icons.Default.Person
             }
             val labelText = stringResource(id = item.labelResId)
