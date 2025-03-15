@@ -12,14 +12,14 @@
     <string name="loginScreen_label_title">Welcome Back</string>
     <string name="loginScreen_label_email">Email</string>
     <string name="loginScreen_label_password">Password</string>
-    <string name="loginScreen_notification_error">User or password inccorect</string>
+    <string name="loginScreen_notification_error">User or password incorrect</string>
     <string name="loginScreen_label_submit">Login</string>
     <string name="loginScreen_label_no_account">You don\'t have account ? Go register !</string>
 
     <string name="registerScreen_label_title">Create an account</string>
     <string name="registerScreen_label_email">Email</string>
     <string name="registerScreen_label_password">Password</string>
-    <string name="registerScreen_notification_error">user or password inccorect</string>
+    <string name="registerScreen_notification_error">user or password incorrect</string>
     <string name="registerScreen_label_submit">Register</string>
     <string name="registerScreen_label_have_account">Already have account, connect here</string>
     <string name="registerScreen_label_name">Name</string>
@@ -57,4 +57,20 @@
     <string name="enclosuredetailscreen_label_average_rating">"Average rating: "</string>
     <string name="enclosuredetailscreen_label_calendar_tile">"Feeding days for "</string>
     <string name="enclosuredetailscreen_label_animal_title">"Animal(s): "</string>
+
+    <string name="servicescreen_label_title">Our Services</string>
+    <string name="servicescreen_label_toilets">Toilets</string>
+    <string name="servicescreen_label_water_point">Water point</string>
+    <string name="servicescreen_label_bakery">Bakery</string>
+    <string name="servicescreen_label_train_station">Train station</string>
+    <string name="servicescreen_label_train_route">Train route</string>
+    <string name="servicescreen_label_lodge">Lodge</string>
+    <string name="servicescreen_label_educational_tent">Educational tent</string>
+    <string name="servicescreen_label_beach_hut">Beach hut</string>
+    <string name="servicescreen_label_nomadic_coffee">Nomadic coffee</string>
+    <string name="servicescreen_label_small_coffee">Small coffee</string>
+    <string name="servicescreen_label_eyes_plateau">Eyes plateau</string>
+    <string name="servicescreen_label_picnic_area">Picnic area</string>
+    <string name="servicescreen_label_viewpoint">Viewpoint</string>
+
 </resources>

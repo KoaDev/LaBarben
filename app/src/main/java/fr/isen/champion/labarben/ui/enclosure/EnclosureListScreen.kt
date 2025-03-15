@@ -1,5 +1,6 @@
 package fr.isen.champion.labarben.ui.enclosure
 
+import android.graphics.Color.parseColor
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.animateContentSize
@@ -71,7 +72,17 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
             ) {
                 items(zoos) { zoo ->
                     val isExpanded = expandedMap[zoo.id] ?: false
+
+                    val zooCardColor = remember(zoo.color) {
+                        try {
+                            Color(parseColor(zoo.color))
+                        } catch (e: Exception) {
+                            Color.Transparent
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -79,9 +90,7 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
                             .animateContentSize(),
                         elevation = CardDefaults.cardElevation(0.dp),
                         border = BorderStroke(1.dp, Color.LightGray),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Transparent
-                        )
+                        colors = CardDefaults.cardColors(containerColor = zooCardColor)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -105,11 +114,13 @@ fun EnclosureListScreen(zoos: List<ZooEntity>) {
                                     contentDescription = null
                                 )
                             }
+
                             if (isExpanded) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 zoo.enclosures.forEach { enclosure ->
                                     val currentMaintenance = maintenanceMap[enclosure.id]
                                         ?: enclosure.maintenance
+
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()

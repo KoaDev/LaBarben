@@ -11,27 +11,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import fr.isen.champion.labarben.R
 
 @Composable
-fun ServiceScreen(
-    rootNavController: NavHostController
-) {
+fun ServiceScreen() {
     val services = listOf(
-        "Toilettes",
-        "Point d'eau",
-        "Boulangerie",
-        "Gare",
-        "Trajet train",
-        "Lodge",
-        "Tente pédagogique",
-        "Paillote",
-        "Café nomade",
-        "Petit Café",
-        "Plateau des yeux",
-        "Espace Pique-nique",
-        "Point de vue"
+        stringResource(R.string.servicescreen_label_toilets),
+        stringResource(R.string.servicescreen_label_water_point),
+        stringResource(R.string.servicescreen_label_bakery),
+        stringResource(R.string.servicescreen_label_train_station),
+        stringResource(R.string.servicescreen_label_train_route),
+        stringResource(R.string.servicescreen_label_lodge),
+        stringResource(R.string.servicescreen_label_educational_tent),
+        stringResource(R.string.servicescreen_label_beach_hut),
+        stringResource(R.string.servicescreen_label_nomadic_coffee),
+        stringResource(R.string.servicescreen_label_small_coffee),
+        stringResource(R.string.servicescreen_label_eyes_plateau),
+        stringResource(R.string.servicescreen_label_picnic_area),
+        stringResource(R.string.servicescreen_label_viewpoint)
     )
 
     Surface(
@@ -42,13 +41,12 @@ fun ServiceScreen(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Nos Services",
+                text = stringResource(R.string.servicescreen_label_title),
                 style = MaterialTheme.typography.headlineMedium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Liste verticale (LazyColumn)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -64,11 +62,10 @@ fun ServiceScreen(
 
 @Composable
 fun ServiceItem(serviceName: String) {
-    // Card pour donner un aspect plus visuel
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RectangleShape), // ou RoundedCornerShape(8.dp) si vous préférez
+            .clip(RectangleShape),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -78,7 +75,6 @@ fun ServiceItem(serviceName: String) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Petite icône à gauche (exemple : place)
             Icon(
                 imageVector = Icons.Default.Place,
                 contentDescription = null,
@@ -88,7 +84,6 @@ fun ServiceItem(serviceName: String) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Nom du service
             Text(
                 text = serviceName,
                 style = MaterialTheme.typography.bodyLarge

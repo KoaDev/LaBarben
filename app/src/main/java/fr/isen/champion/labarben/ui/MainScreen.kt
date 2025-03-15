@@ -37,7 +37,7 @@ fun MainScreen(rootNavController: NavHostController) {
                     FirebaseZooListScreen()
                 }
                 composable(NavigationBarItem.Service.route) {
-                    ServiceScreen(rootNavController)
+                    ServiceScreen()
                 }
                 composable(NavigationBarItem.Profile.route) {
                     ProfileScreen(rootNavController)
