@@ -63,7 +63,11 @@ fun LoginScreen(navController: NavController) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             } else {
-                                Toast.makeText(context, R.string.loginScreen_notification_error, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    task.exception?.message ?: context.getString(R.string.loginScreen_notification_error),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                 },

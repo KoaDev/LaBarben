@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
@@ -24,7 +25,8 @@ fun BottomNavigationBar(navController: NavHostController) {
         NavigationBarItem.Home,
         NavigationBarItem.Enclosure,
         NavigationBarItem.Service,
-        NavigationBarItem.Profile
+        NavigationBarItem.Profile,
+        NavigationBarItem.Map
     )
 
     NavigationBar {
@@ -37,6 +39,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 NavigationBarItem.Enclosure -> Icons.Default.Place
                 NavigationBarItem.Service -> Icons.Default.Build
                 NavigationBarItem.Profile -> Icons.Default.Person
+                NavigationBarItem.Map -> Icons.Default.LocationOn
             }
             val labelText = stringResource(id = item.labelResId)
 
