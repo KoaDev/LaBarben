@@ -20,17 +20,17 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 val rootNavController = rememberNavController()
                 val firebaseAuth = FirebaseAuth.getInstance()
-                val startDestination = if (firebaseAuth.currentUser != null) {
-                    Screen.Home.route
-                } else {
-                    Screen.Login.route
-                }
+                val startDestination = Screen.Home.route
+
+//                } else {
+//                    Screen.Login.route
+
                 NavHost(
                     navController = rootNavController,
                     startDestination = startDestination
                 ) {
-                    composable(Screen.Login.route) { LoginScreen(rootNavController) }
-                    composable(Screen.Register.route) { RegisterScreen(rootNavController) }
+//                    composable(Screen.Login.route) { LoginScreen(rootNavController) }
+//                    composable(Screen.Register.route) { RegisterScreen(rootNavController) }
                     composable(Screen.Home.route) { MainScreen(rootNavController) }
                 }
             }
