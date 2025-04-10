@@ -1,133 +1,112 @@
 package fr.isen.champion.labarben.ui.map
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import fr.isen.champion.labarben.R
+import kotlinx.coroutines.*
 
 @Composable
 fun ZooMapScreen(navController: NavController) {
-    // États de transformation (zoom et translation)
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
+    val context = LocalContext.current
+    var zooPoints by remember { mutableStateOf(emptyList<ZooPoint>()) }
+    val imageWidth = 1080f
+    val imageHeight = 1920f
+    var currentPoints by remember { mutableStateOf(listOf<ZooPoint>()) }
+    var linesToDraw by remember { mutableStateOf(listOf<Pair<ZooPoint, ZooPoint>>()) }
+    val radius = 0.02f
 
-    // États pour stocker les coordonnées (dans le repère de l'image d'origine)
-    var startPoint by remember { mutableStateOf<Offset?>(null) }
-    var destination by remember { mutableStateOf<Offset?>(null) }
+    // State to show AlertDialog
+    var showAlert by remember { mutableStateOf(true) }
 
-    // État pour la transformation via geste
-    val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
-        scale *= zoomChange
-        offset += offsetChange
+    LaunchedEffect(Unit) {
+        zooPoints = loadZooPoints(context) ?: emptyList()
     }
 
-    // Conteneur extérieur non transformé
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Calque de la carte (transformé)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures { tapOffset ->
-                        // Le tapOffset ici est dans le repère non transformé,
-                        // on calcule la coordonnée relative à l'image d'origine
-                        val imageCoordinate = (tapOffset - offset) / scale
-                        when {
-                            startPoint == null -> startPoint = imageCoordinate
-                            destination == null -> destination = imageCoordinate
-                            else -> {
-                                startPoint = imageCoordinate
-                                destination = null
+    // Show AlertDialog only once
+    if (showAlert) {
+        AlertDialog(
+            onDismissRequest = { showAlert = false },
+            title = { Text("Maps") },
+            text = { Text("Cliquez sur la route où vous êtes actuellement, puis sur l'endroit où vous souhaitez aller.") },
+            confirmButton = {
+                TextButton(onClick = { showAlert = false }) {
+                    Text("Ok")
+                }
+            }
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures { tapOffset ->
+                    Log.d("ZooMap", "Tap détecté : (${tapOffset.x}, ${tapOffset.y})")
+                    val clickedPoint = getClickedPoint(tapOffset, zooPoints, imageWidth, imageHeight)
+
+                    clickedPoint?.let {
+                        currentPoints = currentPoints + it
+
+                        if (currentPoints.size == 2) {
+                            val startPoint = currentPoints[0]
+                            val endPoint = currentPoints[1]
+
+                            val pointsInRange = zooPoints.filter { point ->
+                                val distanceToStart = calculateDistance(startPoint, point)
+                                val distanceToEnd = calculateDistance(endPoint, point)
+                                distanceToStart <= radius || distanceToEnd <= radius
+                            }
+
+                            CoroutineScope(Dispatchers.Default).launch {
+                                val path = findPath(startPoint, endPoint, pointsInRange)
+
+                                withContext(Dispatchers.Main) {
+                                    linesToDraw = path
+                                    currentPoints = emptyList()
+                                }
                             }
                         }
+                    } ?: run {
+//                        val newPoint = ZooPoint(tapOffset.x / imageWidth, tapOffset.y / imageHeight)
+//                        addPointToJson(context, newPoint)
+//                        zooPoints = loadZooPoints(context) ?: emptyList()
                     }
                 }
-                .transformable(state = transformableState)
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.maps),
-                contentDescription = "Carte du zoo",
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        // Calque d'overlay pour les marqueurs et la ligne (non transformé)
-        // On applique manuellement la transformation aux coordonnées
-        fun toScreen(coord: Offset): Offset = coord * scale + offset
-
-        // Affichage du marqueur pour le point de départ
-        startPoint?.let { imageCoord ->
-            val screenCoord = toScreen(imageCoord)
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .graphicsLayer {
-                        translationX = screenCoord.x - 16.dp.toPx() // centrer l'icône
-                        translationY = screenCoord.y - 16.dp.toPx()
-                    }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Place,
-                    contentDescription = "Point de départ",
-                    tint = Color.Green,
-                    modifier = Modifier.fillMaxSize()
-                )
             }
-        }
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.maps),
+            contentDescription = "Carte du zoo",
+            modifier = Modifier.fillMaxSize()
+        )
 
-        // Affichage du marqueur pour la destination
-        destination?.let { imageCoord ->
-            val screenCoord = toScreen(imageCoord)
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .graphicsLayer {
-                        translationX = screenCoord.x - 16.dp.toPx()
-                        translationY = screenCoord.y - 16.dp.toPx()
-                    }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Place,
-                    contentDescription = "Destination",
-                    tint = Color.Red,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            linesToDraw.forEach { pair ->
+                val startX = pair.first.x * imageWidth
+                val startY = pair.first.y * imageHeight
+                val endX = pair.second.x * imageWidth
+                val endY = pair.second.y * imageHeight
 
-        // Dessiner la ligne (itinéraire) entre les deux points s'ils sont définis
-        if (startPoint != null && destination != null) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val startScreen = toScreen(startPoint!!)
-                val destScreen = toScreen(destination!!)
                 drawLine(
-                    color = Color.Blue,
-                    start = startScreen,
-                    end = destScreen,
-                    strokeWidth = 5f
+                    color = Color.Red,
+                    start = Offset(startX, startY),
+                    end = Offset(endX, endY),
+                    strokeWidth = 4f
                 )
             }
         }
