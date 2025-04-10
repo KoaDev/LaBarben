@@ -1,6 +1,7 @@
 package fr.isen.champion.labarben.ui.user
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +22,8 @@ fun RegisterScreen(navController: NavController) {
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    // Variable pour le rôle, initialisé à "user"
+    var selectedRole by remember { mutableStateOf("user") }
 
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -75,6 +78,47 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Groupe de boutons radio pour le rôle
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Sélectionnez le rôle",  // Vous pouvez aussi gérer l'internationalisation ici
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { selectedRole = "user" }
+                        .padding(4.dp)
+                ) {
+                    RadioButton(
+                        selected = (selectedRole == "user"),
+                        onClick = { selectedRole = "user" }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "User")
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { selectedRole = "admin" }
+                        .padding(4.dp)
+                ) {
+                    RadioButton(
+                        selected = (selectedRole == "admin"),
+                        onClick = { selectedRole = "admin" }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Admin")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {
                     auth.createUserWithEmailAndPassword(email, password)
@@ -86,19 +130,21 @@ fun RegisterScreen(navController: NavController) {
                                         "firstName" to firstName,
                                         "lastName" to lastName,
                                         "email" to email,
-                                        "role" to "user"
+                                        "role" to selectedRole  // Utilisation du rôle sélectionné
                                     )
                                     database.child("users").child(uid).setValue(userData)
-                                }
-                                navController.navigate(Screen.Home.route) {
-                                    popUpTo(Screen.Register.route) { inclusive = true }
+                                        .addOnSuccessListener {
+                                            // Navigation après confirmation de l'écriture réussie
+                                            navController.navigate(Screen.Home.route) {
+                                                popUpTo(Screen.Register.route) { inclusive = true }
+                                            }
+                                        }
+                                        .addOnFailureListener { error ->
+                                            Toast.makeText(context, "Erreur lors de la création de l'utilisateur: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                        }
                                 }
                             } else {
-                                Toast.makeText(
-                                    context,
-                                    R.string.registerScreen_notification_error,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(context, R.string.registerScreen_notification_error, Toast.LENGTH_SHORT).show()
                             }
                         }
                 },
